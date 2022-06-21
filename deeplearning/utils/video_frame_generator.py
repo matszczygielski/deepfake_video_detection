@@ -68,6 +68,7 @@ class VideoFrameGenerator(Sequence):  # pylint: disable=too-many-instance-attrib
         glob_pattern: str = "./videos/{classname}/*.avi",
         use_headers: bool = True,
         seed=None,
+        class_mode="categorical",
         **kwargs,
     ):
 
@@ -92,6 +93,11 @@ class VideoFrameGenerator(Sequence):  # pylint: disable=too-many-instance-attrib
 
         # shape size should be 2
         assert len(target_shape) == 2
+
+        self.class_mode = class_mode
+
+        if self.class_mode == "binary":
+            assert len(classes) == 2
 
         # split factor should be a propoer value
         if split_val is not None:
@@ -336,9 +342,12 @@ class VideoFrameGenerator(Sequence):  # pylint: disable=too-many-instance-attrib
             classname = self._get_classname(video)
 
             # create a label array and set 1 to the right column
-            label = np.zeros(len(classes))
-            col = classes.index(classname)
-            label[col] = 1.0
+            if self.class_mode == "binary":
+                label = classes.index(classname)
+            else:
+                label = np.zeros(len(classes))
+                col = classes.index(classname)
+                label[col] = 1.0
 
             if video not in self.__frame_cache:
                 frames = self._get_frames(
